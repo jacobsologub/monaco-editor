@@ -453,7 +453,7 @@ function addPluginDTS() {
 		contents = [
 			'/*!-----------------------------------------------------------',
 			' * Copyright (c) Microsoft Corporation. All rights reserved.',
-			' * Type definitions for monaco-editor v'+MONACO_EDITOR_VERSION,
+			' * Type definitions for monaco-editor',
 			' * Released under the MIT license',
 			'*-----------------------------------------------------------*/',
 		].join('\n') + '\n' + contents + '\n' + extraContent.join('\n');
@@ -476,7 +476,7 @@ function addPluginDTS() {
 }
 
 function toExternalDTS(contents) {
-	let lines = contents.split('\n');
+	let lines = contents.split(/\r\n|\r|\n/);
 	let killNextCloseCurlyBrace = false;
 	for (let i = 0; i < lines.length; i++) {
 		let line = lines[i];
@@ -506,8 +506,13 @@ function toExternalDTS(contents) {
 		if (line.indexOf('declare namespace monaco.') === 0) {
 			lines[i] = line.replace('declare namespace monaco.', 'export namespace ');
 		}
+
+		if (line.indexOf('declare let MonacoEnvironment') === 0) {
+			lines[i] = `declare global {\n    let MonacoEnvironment: Environment | undefined;\n}`;
+			// lines[i] = line.replace('declare namespace monaco.', 'export namespace ');
+		}
 	}
-	return lines.join('\n');
+	return lines.join('\n').replace(/\n\n\n+/g, '\n\n');
 }
 
 /**
@@ -766,7 +771,6 @@ const generateTestSamplesTask = function() {
 			'<html>',
 			'<head>',
 			'	<base href="..">',
-			'	<meta http-equiv="X-UA-Compatible" content="IE=edge" />',
 			'	<meta http-equiv="Content-Type" content="text/html;charset=utf-8" />',
 			'</head>',
 			'<body>',
@@ -800,7 +804,7 @@ const generateTestSamplesTask = function() {
 			'',
 			js,
 			'',
-			'/*----------------------------------------SAMPLE CSS END*/',
+			'/*----------------------------------------SAMPLE JS END*/',
 			'});',
 			'</script>',
 			'</body>',
@@ -851,4 +855,9 @@ gulp.task('simpleserver', taskSeries(generateTestSamplesTask, function() {
 	const SERVER_ROOT = path.normalize(path.join(__dirname, '../'));
 	createSimpleServer(SERVER_ROOT, 8080);
 	createSimpleServer(SERVER_ROOT, 8088);
+}));
+
+gulp.task('ciserver', taskSeries(generateTestSamplesTask, function () {
+	const SERVER_ROOT = path.normalize(path.join(__dirname, './'));
+	createSimpleServer(SERVER_ROOT, 8080);
 }));
